@@ -1,0 +1,435 @@
+-- ==========================================
+-- 1. 建立 UI 介面
+-- ==========================================
+local Player = game:GetService("Players").LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
+
+if game.CoreGui:FindFirstChild("FlyESPGUI") then
+    game.CoreGui.FlyESPGUI:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FlyESPGUI"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.DisplayOrder = 999
+ScreenGui.ResetOnSpawn = false
+
+local function makeDraggable(frame, dragPart)
+    local dragging, dragInput, dragStart, startPos
+    dragPart.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    dragPart.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- 懸浮球
+local FloatBtn = Instance.new("TextButton")
+FloatBtn.Size = UDim2.new(0, 140, 0, 40)
+FloatBtn.Position = UDim2.new(0.05, 0, 0.4, 0)
+FloatBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+FloatBtn.Text = "jiaNBB"
+FloatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatBtn.TextSize = 14
+FloatBtn.Font = Enum.Font.FredokaOne
+FloatBtn.Visible = false
+FloatBtn.Parent = ScreenGui
+Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
+makeDraggable(FloatBtn, FloatBtn)
+
+-- 主面板
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 220, 0, 260)
+Main.Position = UDim2.new(0.5, -110, 0.5, -130)
+Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+Main.BorderColor3 = Color3.fromRGB(0, 255, 255)
+Main.BorderSizePixel = 2
+Main.Active = true
+Main.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(0, 100, 100)
+Title.Text = "飛天 & 透視 & 瞬移"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 14
+Title.Font = Enum.Font.FredokaOne
+Title.Parent = Main
+makeDraggable(Main, Title)
+
+local ESPBtn = Instance.new("TextButton")
+ESPBtn.Size = UDim2.new(0.9, 0, 0, 35)
+ESPBtn.Position = UDim2.new(0.05, 0, 0, 40)
+ESPBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ESPBtn.Text = "透視 (血量/名字/距離): 關閉"
+ESPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPBtn.TextSize = 13
+ESPBtn.Parent = Main
+
+local FlyBtn = Instance.new("TextButton")
+FlyBtn.Size = UDim2.new(0.9, 0, 0, 35)
+FlyBtn.Position = UDim2.new(0.05, 0, 0, 85)
+FlyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FlyBtn.Text = "飛天 (穿牆): 關閉"
+FlyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlyBtn.TextSize = 13
+FlyBtn.Parent = Main
+
+local TPBtn = Instance.new("TextButton")
+TPBtn.Size = UDim2.new(0.9, 0, 0, 35)
+TPBtn.Position = UDim2.new(0.05, 0, 0, 130)
+TPBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+TPBtn.Text = "瞬移 (穿牆): 關閉"
+TPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TPBtn.TextSize = 13
+TPBtn.Parent = Main
+
+local TPModeBtn = Instance.new("TextButton")
+TPModeBtn.Size = UDim2.new(0.9, 0, 0, 35)
+TPModeBtn.Position = UDim2.new(0.05, 0, 0, 175)
+TPModeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 200)
+TPModeBtn.Text = "瞬移模式: 身體裡"
+TPModeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TPModeBtn.TextSize = 13
+TPModeBtn.Parent = Main
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.Position = UDim2.new(1, -25, 0, 0)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+CloseBtn.Parent = Main
+
+CloseBtn.MouseButton1Click:Connect(function() Main.Visible = false; FloatBtn.Visible = true end)
+FloatBtn.MouseButton1Click:Connect(function() Main.Visible = true; FloatBtn.Visible = false end)
+
+-- 右上角升降按鈕
+local UpBtn = Instance.new("TextButton")
+UpBtn.Size = UDim2.new(0, 50, 0, 50)
+UpBtn.Position = UDim2.new(1, -130, 0, 100)
+UpBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+UpBtn.BackgroundTransparency = 0.3
+UpBtn.Text = "⬆️"
+UpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+UpBtn.TextSize = 24
+UpBtn.Visible = false
+UpBtn.ZIndex = 10
+UpBtn.Parent = ScreenGui
+Instance.new("UICorner", UpBtn).CornerRadius = UDim.new(1, 0)
+
+local DownBtn = Instance.new("TextButton")
+DownBtn.Size = UDim2.new(0, 50, 0, 50)
+DownBtn.Position = UDim2.new(1, -60, 0, 100)
+DownBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+DownBtn.BackgroundTransparency = 0.3
+DownBtn.Text = "⬇️"
+DownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+DownBtn.TextSize = 24
+DownBtn.Visible = false
+DownBtn.ZIndex = 10
+DownBtn.Parent = ScreenGui
+Instance.new("UICorner", DownBtn).CornerRadius = UDim.new(1, 0)
+
+-- ==========================================
+-- 2. 核心變數
+-- ==========================================
+local espEnabled = false
+local flyEnabled = false
+local tpEnabled = false
+local tpMode = "Inside"
+local isGoingUp = false
+local isGoingDown = false
+-- 觸控判定
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not flyEnabled then return end
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local p = input.Position
+        if p.X >= UpBtn.AbsolutePosition.X and p.X <= UpBtn.AbsolutePosition.X + UpBtn.AbsoluteSize.X and
+           p.Y >= UpBtn.AbsolutePosition.Y and p.Y <= UpBtn.AbsolutePosition.Y + UpBtn.AbsoluteSize.Y then isGoingUp = true end
+        if p.X >= DownBtn.AbsolutePosition.X and p.X <= DownBtn.AbsolutePosition.X + DownBtn.AbsoluteSize.X and
+           p.Y >= DownBtn.AbsolutePosition.Y and p.Y <= DownBtn.AbsolutePosition.Y + DownBtn.AbsoluteSize.Y then isGoingDown = true end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isGoingUp = false
+        isGoingDown = false
+    end
+end)
+
+-- 按鈕事件
+ESPBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    ESPBtn.Text = "透視 (血量/名字/距離): " .. (espEnabled and "開啟" or "關閉")
+    ESPBtn.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(50, 50, 50)
+    if not espEnabled then
+        for _, obj in pairs(ScreenGui:GetChildren()) do
+            if obj.Name:match("ESP_") then obj:Destroy() end
+        end
+    end
+end)
+
+FlyBtn.MouseButton1Click:Connect(function()
+    flyEnabled = not flyEnabled
+    FlyBtn.Text = "飛天 (穿牆): " .. (flyEnabled and "開啟" or "關閉")
+    FlyBtn.BackgroundColor3 = flyEnabled and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(50, 50, 50)
+    UpBtn.Visible = flyEnabled
+    DownBtn.Visible = flyEnabled
+
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char:FindFirstChild("Humanoid")
+
+    if hrp and humanoid then
+        if flyEnabled then
+            humanoid.PlatformStand = true
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            -- 飛天穿牆
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = false end
+            end
+            local bv = Instance.new("BodyVelocity")
+            bv.Name = "HackFly"
+            bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+            bv.Velocity = Vector3.new(0, 0, 0)
+            bv.Parent = hrp
+        else
+            if hrp:FindFirstChild("HackFly") then hrp.HackFly:Destroy() end
+            humanoid.PlatformStand = false
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then part.CanCollide = true end
+            end
+        end
+    end
+end)
+
+TPModeBtn.MouseButton1Click:Connect(function()
+    if tpMode == "Inside" then
+        tpMode = "Above"
+        TPModeBtn.Text = "瞬移模式: 正上方"
+        TPModeBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 100)
+    else
+        tpMode = "Inside"
+        TPModeBtn.Text = "瞬移模式: 身體裡"
+        TPModeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 200)
+    end
+end)
+
+TPBtn.MouseButton1Click:Connect(function()
+    tpEnabled = not tpEnabled
+    TPBtn.Text = "瞬移 (穿牆): " .. (tpEnabled and "開啟" or "關閉")
+    TPBtn.BackgroundColor3 = tpEnabled and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(50, 50, 50)
+    -- 🚨 已經移除自動開啟飛天的邏輯
+end)
+
+-- ==========================================
+-- 3. 即時運算迴圈
+-- ==========================================
+RunService.RenderStepped:Connect(function()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char:FindFirstChild("Humanoid")
+
+    -- 飛天控制
+    if flyEnabled and hrp and humanoid then
+        local bv = hrp:FindFirstChild("HackFly")
+        if bv then
+            local moveDir = humanoid.MoveDirection * 60
+            if isGoingUp then moveDir = moveDir + Vector3.new(0, 50, 0) end
+            if isGoingDown then moveDir = moveDir - Vector3.new(0, 80, 0) end
+            if humanoid.MoveDirection.Magnitude == 0 and not isGoingUp and not isGoingDown then
+                bv.Velocity = Vector3.new(0, 2, 0)
+            else
+                bv.Velocity = moveDir
+            end
+        end
+    end
+
+    local activePlayers = {}
+    local enemies = {}
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and not player:IsTeammate(LocalPlayer) then
+            local pChar = player.Character
+            local pHumanoid = pChar:FindFirstChildOfClass("Humanoid")
+            local pHead = pChar:FindFirstChild("Head")
+            local pRoot = pChar:FindFirstChild("HumanoidRootPart")
+            
+            if pHumanoid and pHumanoid.Health > 0 and pHead and pRoot then
+                activePlayers[player.UserId] = true
+                local dist = math.floor((Camera.CFrame.Position - pRoot.Position).Magnitude)
+
+                if dist <= 350 then
+                    table.insert(enemies, pRoot)
+                    
+                    if espEnabled then
+                        local health = math.floor(pHumanoid.Health)
+                        local maxHealth = math.floor(pHumanoid.MaxHealth)
+                        
+                        local headPos, onScreen = Camera:WorldToViewportPoint(pHead.Position + Vector3.new(0, 0.5, 0))
+                        
+                        if onScreen then
+                            local boxName = "ESP_Box_" .. player.UserId
+                            local box = ScreenGui:FindFirstChild(boxName)
+                            if not box then
+                                box = Instance.new("Frame")
+                                box.Name = boxName
+                                box.BackgroundTransparency = 1
+                                box.BorderSizePixel = 2
+                                box.BorderColor3 = Color3.fromRGB(255, 0, 0)
+                                box.ZIndex = 100
+                                box.Parent = ScreenGui
+                            end
+                            box.Visible = true
+                            box.Size = UDim2.new(0, 45, 0, 65)
+                            box.Position = UDim2.new(0, headPos.X - 22.5, 0, headPos.Y - 10)
+
+                            local tagName = "ESP_Tag_" .. player.UserId
+                            local textTag = ScreenGui:FindFirstChild(tagName)
+                            if not textTag then
+                                textTag = Instance.new("TextLabel")
+                                textTag.Name = tagName
+                                textTag.BackgroundTransparency = 1
+                                textTag.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                textTag.TextStrokeTransparency = 0
+                                textTag.Font = Enum.Font.SourceSansBold
+                                textTag.TextSize = 14
+                                textTag.Size = UDim2.new(0, 200, 0, 50)
+                                textTag.ZIndex = 101
+                                textTag.Parent = ScreenGui
+                            end
+                            textTag.Visible = true
+                            textTag.Text = player.Name .. "\n距離: " .. dist .. "m\n血量: " .. health .. "/" .. maxHealth
+                            textTag.Position = UDim2.new(0, headPos.X - 100, 0, headPos.Y - 60)
+
+                            local barName = "ESP_Bar_" .. player.UserId
+                            local bar = ScreenGui:FindFirstChild(barName)
+                            if not bar then
+                                bar = Instance.new("Frame")
+                                bar.Name = barName
+                                bar.BorderSizePixel = 0
+                                bar.ZIndex = 100
+                                bar.Parent = ScreenGui
+                                local barFill = Instance.new("Frame")
+                                barFill.Name = "Fill"
+                                barFill.Size = UDim2.new(1, 0, 1, 0)
+                                barFill.ZIndex = 101
+                                barFill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+                                barFill.Parent = bar
+                            end
+                            bar.Visible = true
+                            bar.Size = UDim2.new(0, 45, 0, 6)
+                            bar.Position = UDim2.new(0, headPos.X - 22.5, 0, headPos.Y - 15)
+                            bar.Fill.Size = UDim2.new(health/maxHealth, 0, 1, 0)
+                            if health/maxHealth > 0.5 then bar.Fill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+                            elseif health/maxHealth > 0.2 then bar.Fill.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+                            else bar.Fill.BackgroundColor3 = Color3.fromRGB(255, 0, 0) end
+                        else
+                            local box = ScreenGui:FindFirstChild("ESP_Box_" .. player.UserId)
+                            if box then box.Visible = false end
+                            local tag = ScreenGui:FindFirstChild("ESP_Tag_" .. player.UserId)
+                            if tag then tag.Visible = false end
+                            local bar = ScreenGui:FindFirstChild("ESP_Bar_" .. player.UserId)
+                            if bar then bar.Visible = false end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if espEnabled then
+        for _, obj in pairs(ScreenGui:GetChildren()) do
+            if obj.Name:match("ESP_") then
+                local idStr = obj.Name:gsub("ESP_Box_", ""):gsub("ESP_Tag_", ""):gsub("ESP_Bar_", "")
+                local id = tonumber(idStr)
+                if not activePlayers[id] then obj:Destroy() end
+            end
+        end
+    end
+
+    -- 🚨 瞬移邏輯 (獨立穿牆)
+    if tpEnabled and hrp then
+        -- 強制關閉自身碰撞，實現穿牆瞬移
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+
+        if #enemies > 0 then
+            local closestRoot = nil
+            local shortestDist = math.huge
+            local myPos = hrp.Position
+
+            for _, enemyRoot in pairs(enemies) do
+                local dist = (myPos - enemyRoot.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    closestRoot = enemyRoot
+                end
+            end
+
+            if closestRoot then
+                local targetPos
+                if tpMode == "Inside" then
+                    targetPos = closestRoot.Position
+                else
+                    targetPos = closestRoot.Position + Vector3.new(0, 3, 0)
+                end
+                
+                if targetPos.Y > -20 then
+                    hrp.CFrame = CFrame.new(targetPos)
+                end
+            end
+        end
+    end
+end)
+
+-- 重生機制
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    local char = LocalPlayer.Character
+    if char then
+        local humanoid = char:FindFirstChild("Humanoid")
+        if flyEnabled and humanoid then
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                humanoid.PlatformStand = true
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+                local bv = Instance.new("BodyVelocity")
+                bv.Name = "HackFly"
+                bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                bv.Velocity = Vector3.new(0, 0, 0)
+                bv.Parent = hrp
+            end
+        end
+    end
+end)
